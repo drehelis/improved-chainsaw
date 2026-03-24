@@ -1,0 +1,92 @@
+name: Code Quality
+
+on:
+  workflow_call:
+    inputs:
+      type-check:
+        description: 'Enable type-check job'
+        type: boolean
+        default: true
+      lint:
+        description: 'Enable lint job'
+        type: boolean
+        default: true
+      prettier:
+        description: 'Enable prettier job'
+        type: boolean
+        default: true
+      build:
+        description: 'Enable build job'
+        type: boolean
+        default: true
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  type-check:
+    if: ${{ inputs.type-check != false }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install dependencies
+      run: |
+        bun install
+
+    - name: Run
+      run: |
+        bun run type-check
+
+  lint:
+    if: ${{ inputs.lint != false }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install dependencies
+      run: |
+        bun install
+
+    - name: Run
+      run: |
+        bun run lint -- --ignore-pattern '**/__tests__/**'
+
+  prettier:
+    if: ${{ inputs.prettier != false }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install dependencies
+      run: |
+        bun install
+
+    - name: Run
+      run: |
+        bun run format:check
+
+  build:
+    if: ${{ inputs.build != false }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install dependencies
+      run: |
+        bun install
+
+    - name: Run
+      run: |
+        bun run build
