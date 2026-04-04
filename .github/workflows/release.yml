@@ -5,7 +5,7 @@ on:
     inputs:
       version:
         description: 'Version bump'
-        required: true
+        required: false
         type: string
         default: 'patch'
       pre_release_command:
@@ -42,7 +42,7 @@ jobs:
       - name: "Bump to new version"
         id: bump
         run: |
-          _version=$(npm --no-git-tag-version version ${{ inputs.version }})
+          _version=$(npm --no-git-tag-version version "${{ inputs.version }}")
           echo "new_version=$_version" >> $GITHUB_OUTPUT
           echo "New version: $_version"
 
@@ -95,6 +95,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
           NEW_VERSION: ${{ steps.bump.outputs.new_version }}
         run: |
-          gh release create $NEW_VERSION \
+          gh release create "$NEW_VERSION" \
             --target main \
-            -t $NEW_VERSION
+            -t "$NEW_VERSION"
