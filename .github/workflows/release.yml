@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version bump'
+        required: true
+        type: string
+        default: 'patch'
+      pre_release_command:
+        description: 'Command to run before bumping'
+        required: false
+        type: string
+        default: ''
+      timeout_minutes:
+        description: 'Timeout for waiting for PR merge'
+        required: false
+        type: number
+        default: 5
+
+concurrency:
+  group: "release"
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: "Pre-release command"
+        if: ${{ inputs.pre_release_command != '' }}
+        run: ${{ inputs.pre_release_command }}
+
+      - name: "Bump to new version"
+        id: bump
+        run: |
+          _version=$(npm --no-git-tag-version version ${{ inputs.version }})
+          echo "new_version=$_version" >> $GITHUB_OUTPUT
+          echo "New version: $_version"
+
+      - name: "Create Pull Request"
+        id: cpr
+        uses: peter-evans/create-pull-request@v8
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
+        with:
+          token: ${{ secrets.RELEASE_PAT }}
+          title: "chore(release): bump version to ${{ env.NEW_VERSION }}"
+          body: "chore(release): bump version to ${{ env.NEW_VERSION }}"
+          commit-message: "chore(release): bump version to ${{ env.NEW_VERSION }}"
+          branch: "release-${{ env.NEW_VERSION }}"
+          delete-branch: true
+
+      - name: "Auto-merge PR"
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge --squash --auto "${{ steps.cpr.outputs.pull-request-number }}"
+
+      - name: "Wait for PR to merge"
+        if: steps.cpr.outputs.pull-request-number != ''
+        timeout-minutes: ${{ inputs.timeout_minutes }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          while true; do
+            STATE=$(gh pr view "$PR_NUMBER" --json state --template '{{.state}}')
+            if [ "$STATE" == "MERGED" ]; then
+              echo "PR merged."
+              break
+            fi
+            if [ "$STATE" == "CLOSED" ]; then
+              echo "PR closed without merging."
+              exit 1
+            fi
+            echo "State: $STATE. Waiting 3s..."
+            sleep 3
+          done
+
+      # we release after PR is fully merged as deploy/publish workflows are triggered on: on.release.types.published
+      - name: "Release"
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          # https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
+        run: |
+          gh release create $NEW_VERSION \
+            --target main \
+            -t $NEW_VERSION
