@@ -43,7 +43,7 @@ jobs:
         id: bump
         run: |
           _version=$(npm --no-git-tag-version version "${{ inputs.version }}")
-          echo "new_version=$_version" >> $GITHUB_OUTPUT
+          echo "new_version=$_version" >> "$GITHUB_OUTPUT"
           echo "New version: $_version"
 
       - name: "Create Pull Request"
