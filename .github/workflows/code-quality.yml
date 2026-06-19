@@ -27,7 +27,7 @@ jobs:
     if: ${{ inputs.type-check != false }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -44,7 +44,7 @@ jobs:
     if: ${{ inputs.lint != false }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -61,7 +61,7 @@ jobs:
     if: ${{ inputs.prettier != false }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -78,7 +78,7 @@ jobs:
     if: ${{ inputs.build != false }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
